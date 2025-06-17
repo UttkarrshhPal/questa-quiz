@@ -42,8 +42,9 @@ export function middleware(request: NextRequest) {
     return NextResponse.redirect(loginUrl);
   }
 
-  // If accessing auth pages with session, redirect to dashboard
-  if (isAuthPage && sessionToken) {
+  // Only redirect from login page if user has session
+  // Allow signup page even with session (for creating additional accounts)
+  if (request.nextUrl.pathname.startsWith("/login") && sessionToken) {
     const redirectParam = request.nextUrl.searchParams.get("redirect");
     const redirectUrl = redirectParam || "/dashboard";
     return NextResponse.redirect(new URL(redirectUrl, request.url));
