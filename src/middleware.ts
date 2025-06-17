@@ -5,10 +5,17 @@ import type { NextRequest } from "next/server";
 export function middleware(request: NextRequest) {
   console.log("🔍 MIDDLEWARE is running on:", request.nextUrl.pathname);
 
-  const sessionToken =
-    request.cookies.get("better-auth.session.token") ||
-    request.cookies.get("better-auth.session") ||
-    request.cookies.get("better-auth.session_token");
+  // Get all auth-related cookies
+  const cookies = request.cookies.getAll();
+  console.log("All cookies:", cookies.map(c => ({ name: c.name, hasValue: !!c.value })));
+
+  // Better Auth uses these cookie names
+  const sessionToken = 
+    request.cookies.get("better-auth.session_token")?.value ||
+    request.cookies.get("better-auth.session.token")?.value ||
+    request.cookies.get("better-auth.session")?.value ||
+    request.cookies.get("__Secure-better-auth.session_token")?.value ||
+    request.cookies.get("__Host-better-auth.session_token")?.value;
 
   const isAuthPage =
     request.nextUrl.pathname.startsWith("/login") ||
@@ -22,7 +29,7 @@ export function middleware(request: NextRequest) {
   console.log("Middleware check:", {
     path: request.nextUrl.pathname,
     hasSession: !!sessionToken,
-    sessionName: sessionToken?.name,
+    sessionTokenLength: sessionToken?.length,
     isDashboard,
     isAuthPage,
   });
@@ -37,7 +44,9 @@ export function middleware(request: NextRequest) {
 
   // If accessing auth pages with session, redirect to dashboard
   if (isAuthPage && sessionToken) {
-    return NextResponse.redirect(new URL("/dashboard", request.url));
+    const redirectParam = request.nextUrl.searchParams.get("redirect");
+    const redirectUrl = redirectParam || "/dashboard";
+    return NextResponse.redirect(new URL(redirectUrl, request.url));
   }
 
   return NextResponse.next();

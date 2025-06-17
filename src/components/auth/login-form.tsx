@@ -1,10 +1,11 @@
+// components/auth/login-form.tsx
 "use client";
 
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { useRouter } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import {
@@ -26,7 +27,9 @@ const formSchema = z.object({
 
 export function LoginForm() {
   const [isLoading, setIsLoading] = useState(false);
-  const router = useRouter();
+  // const router = useRouter();
+  const searchParams = useSearchParams();
+  const redirectTo = searchParams.get("redirect") || "/dashboard";
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -36,7 +39,7 @@ export function LoginForm() {
     },
   });
 
-   async function onSubmit(values: z.infer<typeof formSchema>) {
+  async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsLoading(true);
     try {
       const result = await authClient.signIn.email({
@@ -50,12 +53,9 @@ export function LoginForm() {
 
       toast.success("Logged in successfully");
 
-      // Small delay to ensure session is set
-      setTimeout(() => {
-        router.push('/dashboard');
-        router.refresh();
-      }, 100);
-    } catch  {
+      // Force a hard navigation to ensure cookies are read
+      window.location.href = redirectTo;
+    } catch {
       toast.error("Invalid email or password");
     } finally {
       setIsLoading(false);
